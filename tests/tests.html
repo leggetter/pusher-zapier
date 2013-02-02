@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!-->  <html class="no-js" lang="en"> <!--<![endif]-->
+	<head>
+	</head>
+	<body>
+		<script src="http://searls.github.com/jasmine-all/jasmine-all-min.js"></script>
+		<script src="../lib/pusher-zapier.js"></script>
+		<script>
+
+			describe("when creating a md5 hash", function() {
+	  		var a;
+
+	  		it("should return a new md5Wrapper object", function() {
+	  			var crypto = require( 'crypto' );
+	  			var hash = crypto.createHash( 'md5' );
+	    		expect( hash instanceof md5Wrapper ).toBe( true );
+	  		});
+			});
+
+			describe("when creating a hmac-sha256", function() {
+
+	  		it("should return a new hmac-sha256 object", function() {
+	  			var crypto = require( 'crypto' );
+	  			var hash = crypto.createHmac( 'sha256', 'someSecret' );
+	    		expect( hash instanceof hmacWrapper ).toBe( true );
+	  		});
+			});
+
+			describe( "when creating authenticated querystring", function() {
+				it( "should create a querystring with an auth_signature parameter", function() {
+					var pusher = new Pusher( {
+						appId: 'someId',
+						key: 'someKey',
+						secret: 'someSecret'
+					} );
+					var queryString = pusher.createSignedQueryString( 'POST', '{}', '/events' );
+					console.log( queryString );
+					expect( queryString ).toContain( '&auth_signature=' );
+				} );
+			} );
+
+		</script>
+	</body>
+</html>
