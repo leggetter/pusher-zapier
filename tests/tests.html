@@ -11,13 +11,22 @@
 		<script>
 
 			describe("when creating a md5 hash", function() {
-	  		var a;
 
 	  		it("should return a new md5Wrapper object", function() {
 	  			var crypto = require( 'crypto' );
 	  			var hash = crypto.createHash( 'md5' );
 	    		expect( hash instanceof md5Wrapper ).toBe( true );
 	  		});
+
+	  		it( "should create the expected md5 hash", function() {
+	  			var data = {"name":"test_event","data":"@leggetter I didn’t realist pusher was based out of the UK. Cool to see some interesting tech firms back home!","channels":["test_channel"]};
+	  			var json = JSON.stringify( data );
+	  			var expected = CryptoJS.MD5( json ).toString();
+
+	  			var actual = Pusher.modules.crypto.createHash('md5').update(json, 'utf8').digest('hex');
+	  			expect( actual ).toBe( expected );
+	  		});
+
 			});
 
 			describe("when creating a hmac-sha256", function() {
@@ -27,6 +36,18 @@
 	  			var hash = crypto.createHmac( 'sha256', 'someSecret' );
 	    		expect( hash instanceof hmacWrapper ).toBe( true );
 	  		});
+
+	  		it( "should create the expected hash", function() {
+	  			var key = 'i_am_a_key';
+	  			var secret = 'i_am_a_secret';
+	  			var bodyToSign = "POST\n/apps/6284/events\nauth_key=" + key + "&auth_timestamp=1360342049&auth_version=1.0&body_md5=d852a9cb917419a093d96d54e1ec88f3";
+	  			var expected = CryptoJS.HmacSHA256( bodyToSign, secret ).toString( CryptoJS.enc.Hex );
+
+	  			var actual = Pusher.modules.crypto.createHmac('sha256', secret).update( bodyToSign ).digest('hex');
+
+	  			expect( actual ).toBe( expected );
+	  		})
+
 			});
 
 			describe( "when creating authenticated querystring", function() {
@@ -38,9 +59,57 @@
 					} );
 					var queryString = pusher.createSignedQueryString( 'POST', '{}', '/events' );
 					console.log( queryString );
-					expect( queryString ).toContain( '&auth_signature=' );
+					expect( queryString ).toMatch( /.*&auth_signature=\w+/ );
 				} );
 			} );
+
+			describe( 'when Zap.trigger_pre_write is called', function() {
+				
+				it( 'should have the url appending with the expected query string', function() {
+					var bundle = new FakeBundle();
+					var request = Zap.trigger_pre_write( bundle );
+					expect( request.url ).toContain( '?auth_key=' );
+					expect( request.url ).toContain( '&auth_timestamp=' );
+					expect( request.url ).toContain( '&auth_version=1.0' );
+					expect( request.url ).toContain( '&body_md5=' );
+				} );
+
+				it( 'should populate the body with the required JSON', function() {
+					var bundle = new FakeBundle();
+					var request = Zap.trigger_pre_write( bundle );
+					var jsonBody = JSON.parse( request.data );
+					expect( jsonBody.name ).toBe( 'zapier_event' );
+					expect( jsonBody.channels[ 0 ] ).toBe( 'zapier_channel' );
+					// expect( jsonBody.channels[ 0 ] ).toBe( 'zapier_channel' );
+				} );
+
+			} );
+
+			function FakeBundle() {
+				this.request = new FakeRequest();
+				this.url_raw = null;
+				this.auth_fields = {
+					app_key: 'my_app_key',
+					app_id: 'my_app_id',
+					app_secret: 'my_app_secret'
+				};
+				this.trigger_data = null;
+				this.action_fields = {
+					'event': 'zapier_event',
+					'channel': 'zapier_channel'
+				};
+			}
+
+			function FakeRequest() {
+				this.url = 'http://someurl.com';
+				this.method = 'POST';
+        this.auth = [];
+        this.headers = {};
+        this.params = {};
+        this.data = JSON.stringify({
+        	data: null
+        });
+			}
 
 		</script>
 	</body>
